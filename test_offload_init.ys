@@ -1,0 +1,32 @@
+# Test script for offload_init pass
+read_verilog test_offload_init.v
+hierarchy -top test_module
+proc
+
+# Show initial design
+echo "=== Initial design ==="
+select
+stat
+
+# Show attributes before offload_init
+echo "=== Attributes before offload_init ==="
+printattrs
+
+# Test offload_init pass with all objects selected
+echo "=== Running offload_init on all objects ==="
+select *
+offload_init -file init_data_all.json -format json
+
+# Show attributes after offload_init
+echo "=== Attributes after offload_init ==="
+printattrs
+
+# Test with specific selection
+echo "=== Running offload_init on specific wires only ==="
+read_verilog test_offload_init.v
+hierarchy -top test_module
+proc
+select w:*
+offload_init -file init_data_wires.csv -format csv
+
+echo "=== Test completed ==="
