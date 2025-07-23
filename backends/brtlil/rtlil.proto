@@ -1,0 +1,155 @@
+syntax = "proto3";
+package yosys.rtlil;
+
+option cc_enable_arenas = true;
+option optimize_for = SPEED;
+
+// Main design container
+message Design {
+  map<string, Module> modules = 1;
+  map<string, Const> attributes = 2;
+  int32 autoidx = 3;
+  string version = 4;
+}
+
+// Module definition
+message Module {
+  string name = 1;
+  map<string, Const> attributes = 2;
+  map<string, Wire> wires = 3;
+  map<string, Cell> cells = 4;
+  map<string, Memory> memories = 5;
+  map<string, Process> processes = 6;
+  repeated Connection connections = 7;
+  repeated string avail_parameters = 8;
+  map<string, Const> parameter_default_values = 9;
+  bool blackbox = 10;
+  bool selected = 11;
+}
+
+// Wire definition
+message Wire {
+  string name = 1;
+  int32 width = 2;
+  bool port_input = 3;
+  bool port_output = 4;
+  int32 port_id = 5;
+  bool upto = 6;
+  bool is_signed = 7;
+  int32 start_offset = 8;
+  map<string, Const> attributes = 9;
+}
+
+// Memory definition  
+message Memory {
+  string name = 1;
+  int32 width = 2;
+  int32 size = 3;
+  int32 start_offset = 4;
+  map<string, Const> attributes = 5;
+}
+
+// Cell definition
+message Cell {
+  string name = 1;
+  string type = 2;
+  map<string, Const> parameters = 3;
+  map<string, SigSpec> connections = 4;
+  map<string, Const> attributes = 5;
+}
+
+// Process definition
+message Process {
+  string name = 1;
+  CaseRule root_case = 2;
+  repeated SyncRule syncs = 3;
+  map<string, Const> attributes = 4;
+}
+
+// Connection between signals
+message Connection {
+  SigSpec left = 1;
+  SigSpec right = 2;
+}
+
+// Signal specification
+message SigSpec {
+  repeated SigChunk chunks = 1;
+  int32 width = 2;  // Cached width for performance
+}
+
+// Signal chunk (either wire reference or constant)
+message SigChunk {
+  oneof chunk_type {
+    WireChunk wire = 1;
+    ConstChunk const = 2;
+  }
+}
+
+// Reference to a wire or part of a wire
+message WireChunk {
+  string wire_name = 1;
+  int32 offset = 2;
+  int32 width = 3;
+}
+
+// Constant value chunk
+message ConstChunk {
+  bytes bits = 1;        // Packed bit representation
+  int32 width = 2;
+  int32 flags = 3;       // RTLIL::ConstFlags
+}
+
+// Constant value
+message Const {
+  bytes bits = 1;        // Packed bit representation  
+  int32 width = 2;
+  int32 flags = 3;       // RTLIL::ConstFlags
+}
+
+// Process case rule
+message CaseRule {
+  repeated SigSpec compare = 1;
+  repeated Action actions = 2;
+  repeated SwitchRule switches = 3;
+  map<string, Const> attributes = 4;
+}
+
+// Process switch rule
+message SwitchRule {
+  SigSpec signal = 1;
+  repeated CaseRule cases = 2;
+  map<string, Const> attributes = 3;
+}
+
+// Process action (assignment)
+message Action {
+  SigSpec left = 1;
+  SigSpec right = 2;
+}
+
+// Process sync rule
+message SyncRule {
+  int32 type = 1;        // RTLIL::SyncType
+  SigSpec signal = 2;
+  repeated Action actions = 3;
+  repeated MemWriteAction mem_write_actions = 4;
+}
+
+// Memory write action
+message MemWriteAction {
+  string memid = 1;
+  SigSpec address = 2;
+  SigSpec data = 3;
+  SigSpec enable = 4;
+  Const priority_mask = 5;
+}
+
+// Metadata for format versioning
+message FormatInfo {
+  int32 major_version = 1;
+  int32 minor_version = 2;
+  string generator = 3;
+  int64 timestamp = 4;
+  bool compressed = 5;
+}
