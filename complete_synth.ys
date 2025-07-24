@@ -1,0 +1,70 @@
+# Complete synthesis script for RAML32KX32W memory mapping
+# This script handles the complete flow from RTL to mapped netlist
+
+# Enable verbose logging for debugging
+logger -level 3
+
+# Read the input design
+read_verilog example_design.v
+
+# Alternative: if you have multiple files
+# read_verilog file1.v file2.v file3.v
+
+# Set the top module
+hierarchy -check -top top
+
+# Show initial statistics
+stat
+
+# Convert behavioral constructs to structural
+proc
+opt_expr
+opt_clean
+
+# Extract memory instances from the design
+memory_collect
+
+# Convert memory read ports to use DFFs when beneficial
+memory_dff
+
+# Share memory ports when possible
+memory_share
+
+# Handle memory initialization conflicts
+memory_memx
+
+# Show memory information before mapping
+memory -verbose
+
+# Map memories to RAML32KX32W using our custom library
+# The -verbose flag shows detailed mapping information
+memory_libmap -lib raml32kx32w_lib.txt -verbose
+
+# Show intermediate results
+stat
+
+# Map the library-specific intermediate cells to actual hardware
+techmap -map raml32kx32w_map.v -verbose
+
+# Map any remaining unmapped memories to logic (fallback)
+memory_map
+
+# Final optimization passes
+opt
+opt_clean
+
+# Show final statistics
+stat
+
+# Optional: Show the mapped netlist structure
+# show -format ps -prefix mapped_design
+
+# Write various output formats
+write_verilog -attr2comment mapped_design.v
+write_json mapped_design.json
+
+# Optional: write other formats
+# write_edif mapped_design.edif
+# write_blif mapped_design.blif
+
+echo "Synthesis complete. Check mapped_design.v for results."

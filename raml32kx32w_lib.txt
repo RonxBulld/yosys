@@ -1,0 +1,27 @@
+# RAML32KX32W Memory Library Definition
+# 32K words × 32 bits, rising edge sensitive read port memory
+
+ram block $__RAML32KX32W_ {
+	# 32K words = 2^15, so 15 address bits
+	abits 15;
+	# 32 bits wide
+	width 32;
+	# Cost estimation for selection heuristic
+	cost 1024;
+	# Support initialization with any value
+	init any;
+	# This is a read-only memory port, so prune from write memories
+	prune_rom;
+	
+	# Synchronous read port with rising edge clock
+	port sr "R" {
+		# Rising edge clock only (based on requirements)
+		clock posedge;
+		# Optional read enable signal
+		rden;
+		# Support read initialization
+		rdinit any;
+		# Support synchronous reset
+		rdsrst any ungated;
+	}
+}

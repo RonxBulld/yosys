@@ -1,0 +1,39 @@
+# Synthesis script to map $memwr_v2 instances to RAML32KX32W memory
+# Usage: yosys synth_raml32kx32w.ys
+
+# Read input design
+read_verilog design.v
+
+# Perform hierarchy analysis
+hierarchy -check -top top
+
+# Convert processes to logic
+proc
+
+# Optimize the design
+opt
+
+# Convert memories to proper memory cells
+memory_collect
+memory_dff
+memory_share
+memory_memx
+
+# Map memories using our RAML32KX32W library
+# Note: This maps suitable memories to our custom RAM
+memory_libmap -lib raml32kx32w_lib.txt
+
+# Map the intermediate cells to actual hardware using techmap
+techmap -map raml32kx32w_map.v
+
+# Map remaining memories that couldn't be mapped to hardware to logic
+memory_map
+
+# Optimize after memory mapping
+opt
+
+# Report statistics
+stat
+
+# Write output
+write_verilog output.v

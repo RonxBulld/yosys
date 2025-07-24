@@ -1,0 +1,22 @@
+# Quick test script to verify RAML32KX32W memory mapping
+
+# Test the library definition
+echo "Testing RAML32KX32W library definition..."
+
+# Read and test the example design
+read_verilog example_design.v
+hierarchy -check -top top
+
+# Extract memories
+proc
+memory_collect
+memory -verbose
+
+# Try to map to our library
+echo "Attempting memory mapping..."
+memory_libmap -lib raml32kx32w_lib.txt -verbose
+
+# Show results
+stat
+
+echo "Test completed. Check above output for mapping results."
