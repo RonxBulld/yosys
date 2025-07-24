@@ -270,3 +270,198 @@ From the root of the repository, run `make docs`.  This will build/rebuild yosys
 as necessary before generating the website documentation from the yosys help
 commands.  To build for pdf instead of html, call 
 `make docs DOC_TARGET=latexpdf`.
+
+# 通用内存模板 (Generic Memory Template)
+
+这个项目提供了一个具有可变端口数量的通用内存描述文件，可以将任何内存综合到这个目标，然后进行二次处理。
+
+## 文件结构
+
+- `generic_memory_template.v` - 核心的通用内存模块
+- `memory_config_generator.py` - 配置生成器脚本  
+- `usage_examples.v` - 使用示例
+- `README.md` - 说明文档
+
+## 核心特性
+
+### 1. 可变端口数量
+- 支持任意数量的读端口 (RD_PORTS)
+- 支持任意数量的写端口 (WR_PORTS)
+- 每个端口可以独立配置
+
+### 2. 灵活的配置选项
+- 内存大小 (SIZE) 和数据位宽 (WIDTH) 可配置
+- 支持不同的时钟极性和使能模式
+- 支持透明读取和冲突处理
+- 支持同步/异步复位
+
+### 3. 兼容性
+- 与Yosys综合工具兼容
+- 遵循标准Verilog语法
+- 支持各种FPGA和ASIC目标
+
+## 参数说明
+
+### 基本内存参数
+```verilog
+parameter MEMID = "generic_mem"  // 内存标识符
+parameter SIZE = 1024            // 内存深度（字数）
+parameter OFFSET = 0             // 地址偏移
+parameter ABITS = 10             // 地址位宽
+parameter WIDTH = 32             // 数据位宽
+parameter INIT = 0               // 初始化值
+```
+
+### 端口配置参数
+```verilog
+parameter RD_PORTS = 2           // 读端口数量
+parameter WR_PORTS = 2           // 写端口数量
+```
+
+### 读端口配置
+```verilog
+parameter RD_CLK_ENABLE = {RD_PORTS{1'b1}}      // 每个读端口的时钟使能
+parameter RD_CLK_POLARITY = {RD_PORTS{1'b1}}    // 每个读端口的时钟极性
+parameter RD_TRANSPARENCY = {RD_PORTS{1'b0}}    // 每个读端口的透明模式
+parameter RD_COLLISION_X = {RD_PORTS{1'b0}}     // 每个读端口的冲突行为
+```
+
+### 写端口配置
+```verilog
+parameter WR_CLK_ENABLE = {WR_PORTS{1'b1}}      // 每个写端口的时钟使能
+parameter WR_CLK_POLARITY = {WR_PORTS{1'b1}}    // 每个写端口的时钟极性
+```
+
+## 使用方法
+
+### 1. 直接实例化
+
+```verilog
+generic_memory #(
+    .SIZE(1024),
+    .WIDTH(32),
+    .RD_PORTS(2),
+    .WR_PORTS(1)
+) my_memory (
+    .RD_CLK({clk, clk}),
+    .RD_EN({rd_en1, rd_en0}),
+    .RD_ADDR({addr1, addr0}),
+    .RD_DATA({data1, data0}),
+    
+    .WR_CLK(clk),
+    .WR_EN(wr_en),
+    .WR_BE(wr_be),
+    .WR_ADDR(wr_addr),
+    .WR_DATA(wr_data)
+);
+```
+
+### 2. 使用配置生成器
+
+```bash
+# 列出所有预设配置
+python memory_config_generator.py --list
+
+# 使用预设配置生成双端口内存
+python memory_config_generator.py --preset dual_port
+
+# 自定义配置：4读2写，2048x64bit
+python memory_config_generator.py --custom --rd_ports 4 --wr_ports 2 --size 2048 --width 64
+
+# 生成完整模块到文件
+python memory_config_generator.py --preset register_file --full_module --output reg_file.v
+```
+
+## 预设配置
+
+| 名称 | 描述 | 读端口 | 写端口 | 大小 | 位宽 |
+|------|------|--------|--------|------|------|
+| single_port | 单端口内存 | 1 | 1 | 1024 | 32 |
+| dual_port | 双端口内存 | 2 | 2 | 1024 | 32 |
+| quad_read | 四读单写内存 | 4 | 1 | 2048 | 64 |
+| register_file | 寄存器文件 | 8 | 4 | 32 | 32 |
+| cache_line | 缓存行存储 | 2 | 1 | 64 | 512 |
+| fifo_buffer | FIFO缓冲区 | 1 | 1 | 256 | 64 |
+
+## 高级特性
+
+### 1. 透明读取
+设置 `RD_TRANSPARENCY` 参数可以启用透明读取模式，在读写同一地址时直接返回写入的数据。
+
+### 2. 冲突处理
+设置 `RD_COLLISION_X` 参数可以在读写冲突时输出未知值 (X)。
+
+### 3. 不同时钟域
+读端口和写端口可以使用不同的时钟，支持跨时钟域操作。
+
+### 4. 字节使能
+支持细粒度的字节使能控制，可以部分写入数据字。
+
+## 应用场景
+
+### 1. 处理器设计
+- 寄存器文件：多读多写端口
+- 缓存存储：快速多端口访问
+- 指令/数据存储器
+
+### 2. 数据通路设计  
+- FIFO缓冲区：透明读取模式
+- 查找表：只读多端口访问
+- 临时存储：灵活端口配置
+
+### 3. SoC集成
+- 共享存储器：多主机访问
+- DMA缓冲区：异步读写
+- 外设接口缓存
+
+## 综合注意事项
+
+### 1. 资源使用
+- 端口数量直接影响资源消耗
+- 考虑目标FPGA的块RAM限制
+- 优化端口配置以减少逻辑资源
+
+### 2. 时序优化
+- 多端口可能增加时序压力
+- 考虑添加流水线级
+- 平衡端口数量和频率要求
+
+### 3. 二次处理
+这个模板作为综合目标，可以进一步优化：
+- 映射到特定的块RAM资源
+- 优化端口多路复用
+- 添加错误检测和纠正
+
+## 调试支持
+
+编译时定义 `DEBUG_MEMORY` 宏可以启用调试输出：
+
+```verilog
+`define DEBUG_MEMORY
+```
+
+这将在仿真时显示所有读写操作的详细信息。
+
+## 示例项目
+
+查看 `usage_examples.v` 文件了解完整的使用示例，包括：
+- 单端口内存
+- 双端口内存  
+- 多端口寄存器文件
+- 缓存行存储
+- FIFO缓冲区
+- 异步时钟域内存
+- ROM实现
+
+## 扩展和自定义
+
+这个模板可以根据具体需求进行扩展：
+1. 添加ECC支持
+2. 实现特定的写入模式
+3. 优化特定FPGA架构
+4. 添加性能计数器
+5. 集成测试和验证逻辑
+
+## 许可证
+
+本项目与Yosys Open SYnthesis Suite兼容，采用相同的开源许可证。
