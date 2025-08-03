@@ -1,0 +1,33 @@
+# Yosys script to find VBUF instances whose input I is directly connected to another VBUF's output O
+
+# Read the Verilog file
+read_verilog vbuf_example.v
+
+# Hierarchy processing
+hierarchy -check -top test_vbuf
+
+# Method 1: Find all VBUF instances whose input port I is connected to another VBUF's output port O
+# This selects VBUF cells that have their input port driven by another VBUF's output
+echo "Method 1: VBUF instances with input I connected to another VBUF's output O:"
+select -list t:VBUF %ci:+[I] t:VBUF %d
+
+# Method 2: Alternative approach - select VBUF cells and filter by connection
+# First select all VBUF cells, then filter those whose input comes from another VBUF
+echo "\nMethod 2: Using more detailed selection:"
+select -list t:VBUF %ci1:+[I] t:VBUF %i1 %i
+
+# Method 3: Show the driving VBUF for each VBUF with chained input
+echo "\nMethod 3: Show pairs of connected VBUFs (driver -> driven):"
+select -list t:VBUF %co:+[O] t:VBUF %d
+
+# Method 4: Find all VBUF-to-VBUF connections
+echo "\nMethod 4: All VBUF instances involved in VBUF-to-VBUF connections:"
+select -list t:VBUF %a:+[O] t:VBUF %i
+
+# Explanation of select commands:
+# t:VBUF - select cells of type VBUF
+# %ci:+[I] - select cells connected to input port I
+# %co:+[O] - select cells connected to output port O
+# %d - downstream (driven) cells
+# %i - select cells that are inputs to the previously selected cells
+# %a:+[port] - all cells connected to the specified port

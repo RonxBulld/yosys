@@ -1,0 +1,28 @@
+# 核心 select 指令：查找输入端口 I 直接连接到另一个 VBUF 输出端口 O 的 VBUF 实例
+
+# 最直接的方法：
+select -list t:VBUF %ci:+[I] t:VBUF %d
+
+# 解释：
+# 1. t:VBUF - 首先选择所有 VBUF 类型的单元
+# 2. %ci:+[I] - 选择连接到这些单元输入端口 I 的单元
+# 3. t:VBUF - 过滤出其中的 VBUF 类型单元
+# 4. %d - 选择下游（被驱动）的单元
+
+# 这个命令会返回所有满足以下条件的 VBUF 实例：
+# - 它们的输入端口 I 直接连接到另一个 VBUF 的输出端口 O
+# - 中间没有其他器件
+
+# 在上面的例子中，这个命令会找到：
+# - vbuf2 (输入来自 vbuf1 的输出)
+# - vbuf3 (输入来自 vbuf2 的输出)
+# - vbuf5 (输入来自 vbuf4 的输出)
+# - vbuf6 (输入来自 vbuf5 的输出)
+
+# 如果想要查看连接对（驱动器 -> 被驱动器），可以使用：
+select -list -module test_vbuf t:VBUF %x:+[O]=(I) %co:+[O] t:VBUF %i %u %i
+
+# 或者使用更简单的版本来显示成对的连接：
+select -set driver t:VBUF
+select -set driven @driver %co:+[O] t:VBUF %d
+select -list @driven
