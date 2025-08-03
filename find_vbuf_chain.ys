@@ -1,0 +1,61 @@
+# 读取Verilog文件
+read_verilog vbuf_test.v
+
+# 显示设计信息
+show
+
+# 方法1: 查找所有VBUF实例
+echo === 所有VBUF实例 ===
+select t:VBUF
+select -list
+
+# 方法2: 查找输入端口I连接到VBUF输出端口O的VBUF实例
+echo === 查找直接连接的VBUF实例 ===
+
+# 选择所有VBUF实例
+select t:VBUF
+
+# 展开选择，找到连接到VBUF输出的所有对象
+select %x:+[O]
+
+# 选择连接到这些输出的VBUF输入端口
+select %x:+[I]
+
+# 选择包含这些输入端口的VBUF实例
+select %x:+[I] t:VBUF
+
+# 显示结果
+select -list
+
+# 方法3: 更精确的方法 - 查找输入端口I直接连接到VBUF输出端口O的VBUF实例
+echo === 精确查找直接连接的VBUF实例 ===
+
+# 清除选择
+select -clear
+
+# 选择所有VBUF实例
+select t:VBUF
+
+# 获取VBUF的输出端口
+select %x:+[O]
+
+# 获取连接到这些输出的所有对象
+select %x:+[O]
+
+# 选择VBUF的输入端口I
+select %x:+[I] t:VBUF
+
+# 显示结果
+select -list
+
+# 方法4: 使用更简单的方法
+echo === 简化方法 ===
+select -clear
+
+# 选择所有VBUF实例
+select t:VBUF
+
+# 显示连接信息
+show -format dot -prefix vbuf_connections
+
+echo === 分析完成 ===

@@ -1,0 +1,24 @@
+# 读取Verilog文件
+read_verilog vbuf_test.v
+
+# 显示所有VBUF实例
+select t:VBUF
+select -list
+
+# 查找直接连接的VBUF实例
+# 方法：选择所有VBUF实例，然后展开到它们的输出端口，再找到连接到这些输出的VBUF输入端口
+
+# 清除选择
+select -clear
+
+# 选择所有VBUF实例
+select t:VBUF
+
+# 展开到VBUF的输出端口
+select %x:+[O]
+
+# 找到连接到这些输出的VBUF输入端口
+select %x:+[I] t:VBUF
+
+# 显示结果
+select -list
