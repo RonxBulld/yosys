@@ -1,0 +1,28 @@
+# 读取Verilog文件
+read_verilog vbuf_test.v
+
+# 显示设计信息
+show
+
+# 查找所有VBUF实例
+select t:VBUF
+select -list
+
+# 查找直接连接的VBUF实例 - 方法1
+select -clear
+select t:VBUF
+select %x:+[O]
+select %x:+[I] t:VBUF
+select -list
+
+# 查找直接连接的VBUF实例 - 方法2
+select -clear
+select t:VBUF
+select %x:+[O]
+select %x:+[I] t:VBUF
+select -list
+
+# 显示连接信息
+select -clear
+select t:VBUF
+show -format dot -prefix vbuf_connections
