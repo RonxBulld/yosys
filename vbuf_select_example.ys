@@ -1,0 +1,48 @@
+# Yosys select指令示例：查找VBUF器件连接关系
+# 
+# 目标：查找VBUF器件实例，其输入端口I直接连接到另一个VBUF的输出端口O
+#
+# 解决方案分析：
+# 1. 首先选择所有VBUF类型的器件
+# 2. 通过输出端口O扩展选择，找到连接的线网
+# 3. 再通过这些线网扩展选择，找到连接到这些线网的VBUF输入端口I
+# 4. 排除原始选择的VBUF，得到目标VBUF
+
+# 方法1：使用%x扩展选择来查找连接关系
+# 选择所有VBUF类型的器件，通过输出端口O扩展，再通过输入端口I扩展，找到连接的VBUF
+select t:VBUF %x:+[O] %x:+[I],VBUF t:VBUF %i
+
+# 解释：
+# t:VBUF           - 选择所有类型为VBUF的器件
+# %x:+[O]          - 扩展选择：通过VBUF的输出端口O连接的线网
+# %x:+[I],VBUF     - 扩展选择：通过这些线网连接到VBUF器件的输入端口I
+# t:VBUF %i        - 与VBUF器件类型求交集，确保只选择VBUF器件
+
+# 方法2：更精确的方法，使用保存选择
+# 先保存所有VBUF的选择
+select -set all_vbuf t:VBUF
+
+# 选择所有VBUF的输出端口O连接的线网
+select @all_vbuf %x:+[O] w:* %i
+select -set vbuf_output_nets %
+
+# 选择连接到这些线网的VBUF输入端口I
+select @vbuf_output_nets %x:+[I],VBUF t:VBUF %i
+
+# 这将选择所有输入端口I直接连接到其他VBUF输出端口O的VBUF器件
+
+# 方法3：使用输出锥和输入锥
+# 选择所有VBUF，通过输出锥扩展1步，再通过输入锥扩展1步，限制为VBUF
+select t:VBUF %co1:+[O] %ci1:+[I],VBUF t:VBUF %i
+
+# 如果需要确保中间没有其他器件，可以添加额外的约束
+# 方法4：检查直接连接（无中间器件）
+select t:VBUF %x1:+[O] w:* %x1:+[I],VBUF t:VBUF %i
+
+# 注意：%x1 表示只扩展1步，确保是直接连接
+# +[O] 表示只通过输出端口O扩展
+# +[I],VBUF 表示只通过VBUF器件的输入端口I扩展
+
+# 最终推荐的完整解决方案：
+echo "查找VBUF器件实例，其输入端口I直接连接到另一个VBUF的输出端口O："
+select t:VBUF %x1:+[O] w:* %x1:+[I],VBUF t:VBUF %i
